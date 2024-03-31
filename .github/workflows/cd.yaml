@@ -5,14 +5,13 @@ on:
     types: [deploy]
 
 jobs:
-
   deploy:
     runs-on: self-hosted
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
-      
+
     - name: Setup Kubectl
       uses: azure/setup-kubectl@v3
 
@@ -20,15 +19,18 @@ jobs:
       run: |
         curl -s https://fluxcd.io/install.sh | sudo bash
         export PATH=$PATH:/home/runner/.flux/bin
-        
+
     - name: Configure Flux
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
         flux bootstrap github \
           --owner=${{ github.repository_owner }} \
           --repository=${{ github.event.repository.name }} \
           --branch=main \
-          --path=./clusters/my-cluster
-          
+          --path=./clusters/my-cluster \
+          --token=$GH_TOKEN
+
     - name: Update Deployment
       run: |
         flux create source git webapp \
@@ -36,12 +38,11 @@ jobs:
           --branch=main \
           --interval=1m \
           --export > ./clusters/my-cluster/webapp-source.yaml
-          
-        # Use the provided Kubernetes manifests
+
         kubectl create namespace my-namespace --dry-run=client -o yaml | kubectl apply -f -
         kubectl apply -f deployment.yaml -n my-namespace
         kubectl apply -f service.yaml -n my-namespace
-          
+
     - name: Commit and push changes
       run: |
         git add -A
