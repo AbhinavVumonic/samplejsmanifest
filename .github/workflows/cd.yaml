@@ -1,0 +1,46 @@
+name: cd
+
+on:
+  repository_dispatch:
+    types: [deploy]
+
+jobs:
+
+  deploy:
+    runs-on: k8s-single-runner
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Kubectl
+      uses: azure/setup-kubectl@v3
+      
+    - name: Configure Flux
+      run: |
+        flux bootstrap github \
+          --owner=${{ github.repository_owner }} \
+          --repository=${{ github.event.repository.name }} \
+          --branch=main \
+          --path=./clusters/my-cluster
+          
+    - name: Update Deployment
+      run: |
+        flux create source git webapp \
+          --url=${{ github.server_url }}/${{ github.repository }} \
+          --branch=main \
+          --interval=1m \
+          --export > ./clusters/my-cluster/webapp-source.yaml
+          
+        # Use the provided Kubernetes manifests
+        kubectl create namespace my-namespace --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -f deployment.yaml -n my-namespace
+        kubectl apply -f service.yaml -n my-namespace
+          
+    - name: Commit and push changes
+      run: |
+        git add -A
+        git config user.email "actions@github.com"
+        git config user.name "GitHub Actions"
+        git commit -m "Deploy webapp" || true
+        git push
