@@ -33,17 +33,6 @@ jobs:
           --read-write-key \
           --personal
           
-    - name: Configure Flux
-      run: |
-        flux bootstrap github \
-          --components-extra=image-reflector-controller,image-automation-controller \
-          --owner=$GITHUB_USER \
-          --repository=flux-image-updates \
-          --branch=main \
-          --path=clusters/my-cluster \
-          --read-write-key \
-          --personal
-          
     - name: Commit and Push
       run: |
         git config user.name "GitHub Actions"
