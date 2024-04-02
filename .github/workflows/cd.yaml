@@ -1,52 +1,44 @@
-name: cd
+name: Continuous Deployment
 
 on:
-  repository_dispatch:
-    types: [deploy]
+  push:
+    branches:
+      - main
+    paths:
+      - 'manifests/**'
 
 jobs:
+
   deploy:
     runs-on: self-hosted
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
-
-    - name: Setup Kubectl
-      uses: azure/setup-kubectl@v3
-
-    - name: Install Flux CLI
-      run: |
-        curl -s https://fluxcd.io/install.sh | sudo bash
-        export PATH=$PATH:/home/runner/.flux/bin
-
+      
     - name: Configure Flux
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
-        flux bootstrap github \
+        flux bootstrap --components-extra=image-reflector-controller,image-automation-controller github \
           --owner=${{ github.repository_owner }} \
           --repository=${{ github.event.repository.name }} \
           --branch=main \
-          --path=./clusters/my-cluster \
-          --token=${{ secrets.GH_TOKEN }}
-
-    - name: Update Deployment
+          --path=./bootstrap \
+          --read-write-key \
+          --personal
+          
+    - name: Update Kustomization
       run: |
-        flux create source git webapp \
-          --url=${{ github.server_url }}/${{ github.repository }} \
-          --branch=main \
-          --interval=1m \
-          --export > ./clusters/my-cluster/webapp-source.yaml
-
-        kubectl create namespace my-namespace --dry-run=client -o yaml | kubectl apply -f -
-        kubectl apply -f deployment.yaml -n my-namespace
-        kubectl apply -f service.yaml -n my-namespace
-
-    - name: Commit and push changes
+        flux create kustomization app \
+          --target-path=./manifests \
+          --source=flux-system \
+          --prune=true \
+          --interval=5m \
+          --export > ./bootstrap/kustomization.yaml
+          
+    - name: Commit and Push
       run: |
-        git add -A
-        git config user.email "actions@github.com"
         git config user.name "GitHub Actions"
-        git commit -m "Deploy webapp" || true
+        git config user.email "actions@github.com"
+        git add -A
+        git commit -m "Update manifests"
         git push
