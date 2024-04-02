@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'manifests/**'
 
 jobs:
 
@@ -16,9 +14,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install FluxCD CLI
+    - name: Install FluxCD Toolkit
       run: |
-        curl -s https://toolkit.fluxcd.io/install.sh | sudo bash
+        wget -O install_fluxcd.sh https://toolkit.fluxcd.io/install.sh
+        sudo bash install_fluxcd.sh
       
     - name: Configure Flux
       run: |
