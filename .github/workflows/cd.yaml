@@ -13,11 +13,17 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
       GITHUB_USER: AbhinavVumonic
+      CLUSTER_CONTEXT: gke_letters-297411_europe-west3_vm-kcl-letters-data-pull-p-euwe3-gke
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Write kubeconfig
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBECONFIG_DATA }}" > $HOME/.kube/config
+    
     - name: Install FluxCD Toolkit
       run: |
         wget -O install_fluxcd.sh https://toolkit.fluxcd.io/install.sh
@@ -31,7 +37,9 @@ jobs:
           --branch=main \
           --path=./bootstrap \
           --read-write-key \
-          --personal
+          --personal \
+          --kubeconfig=$HOME/.kube/config \
+          --context=${{ env.CLUSTER_CONTEXT }}
           
     - name: Commit and Push
       run: |
