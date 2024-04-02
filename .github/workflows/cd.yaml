@@ -9,6 +9,10 @@ jobs:
 
   deploy:
     runs-on: self-hosted
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      GITHUB_USER: AbhinavVumonic
     
     steps:
     - name: Checkout code
@@ -31,13 +35,14 @@ jobs:
           
     - name: Configure Flux
       run: |
-        flux bootstrap --components-extra=image-reflector-controller,image-automation-controller github \
-          --owner=${{ github.repository_owner }} \
-          --repository=${{ github.event.repository.name }} \
+        flux bootstrap github \
+          --components-extra=image-reflector-controller,image-automation-controller \
+          --owner=$GITHUB_USER \
+          --repository=flux-image-updates \
           --branch=main \
-          --path=./bootstrap \
+          --path=clusters/my-cluster \
           --read-write-key \
-          --token=${{ secrets.GH_TOKEN }}
+          --personal
           
     - name: Commit and Push
       run: |
