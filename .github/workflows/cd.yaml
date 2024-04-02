@@ -28,6 +28,14 @@ jobs:
       run: |
         wget -O install_fluxcd.sh https://toolkit.fluxcd.io/install.sh
         sudo bash install_fluxcd.sh
+
+    - name: Install GKE authentication plugin
+      run: |
+        PLUGIN_VERSION="0.2.1"
+        wget -O gke-gcloud-auth-plugin.tar.gz https://github.com/GoogleCloudPlatform/cloud-providers-gcp/releases/download/gke-auth-plugin-v${PLUGIN_VERSION}/gke-cloud-auth-plugin-linux-amd64-v${PLUGIN_VERSION}.tar.gz
+        tar -zxvf gke-gcloud-auth-plugin.tar.gz
+        chmod +x gke-cloud-auth-plugin-linux-amd64-v${PLUGIN_VERSION}/gke-gcloud-auth-plugin
+        sudo mv gke-cloud-auth-plugin-linux-amd64-v${PLUGIN_VERSION}/gke-gcloud-auth-plugin /usr/local/bin/
       
     - name: Configure Flux
       run: |
