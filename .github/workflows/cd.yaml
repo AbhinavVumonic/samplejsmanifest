@@ -29,14 +29,15 @@ jobs:
           --read-write-key \
           --personal
           
-    - name: Update Kustomization
+    - name: Configure Flux
       run: |
-        flux create kustomization app \
-          --target-path=./manifests \
-          --source=flux-system \
-          --prune=true \
-          --interval=5m \
-          --export > ./bootstrap/kustomization.yaml
+        flux bootstrap --components-extra=image-reflector-controller,image-automation-controller github \
+          --owner=${{ github.repository_owner }} \
+          --repository=${{ github.event.repository.name }} \
+          --branch=main \
+          --path=./bootstrap \
+          --read-write-key \
+          --token=${{ secrets.GH_TOKEN }}
           
     - name: Commit and Push
       run: |
